@@ -9,6 +9,7 @@ const state = {
   total: 40,
   highlightLargest: false,
   showAnswer: false,
+  wholeLayout: 'blob',
 }
 
 const app = document.querySelector('#app')
@@ -46,6 +47,10 @@ app.innerHTML = `
         <span id="group-detail"></span>
         <button class="split-button" id="split-button" type="button" aria-pressed="true">Combine</button>
         <label class="highlight-toggle">
+          <input id="rectangle-layout" type="checkbox" />
+          <span>Rectangle whole</span>
+        </label>
+        <label class="highlight-toggle">
           <input id="show-answer" type="checkbox" />
           <span>Show answer</span>
         </label>
@@ -81,6 +86,7 @@ const legend = document.querySelector('#legend')
 const splitButton = document.querySelector('#split-button')
 const highlightLargest = document.querySelector('#highlight-largest')
 const showAnswer = document.querySelector('#show-answer')
+const rectangleLayout = document.querySelector('#rectangle-layout')
 
 let dimensions = { width: 900, height: 560 }
 let simulation
@@ -109,6 +115,7 @@ function readState() {
   state.total = total
   state.highlightLargest = highlightLargest.checked
   state.showAnswer = showAnswer.checked
+  state.wholeLayout = rectangleLayout.checked ? 'rectangle' : 'blob'
 
   inputs.denominator.value = denominator
   inputs.numerator.max = denominator
@@ -161,6 +168,49 @@ function dotRadius(count) {
   if (count > 110) return 12
   if (count > 70) return 14
   return 17
+}
+
+function rectangleMetrics(groupSize) {
+  const columns = state.denominator
+  const rows = groupSize
+  const usableWidth = dimensions.width * 0.7
+  const usableHeight = dimensions.height * 0.74
+  const spacingX = columns > 1 ? Math.min(130, usableWidth / (columns - 1)) : 0
+  const spacingY = rows > 1 ? Math.min(28, usableHeight / (rows - 1)) : 0
+  const spacingForRadius = Math.max(12, Math.min(spacingX || 28, spacingY || 28))
+  const width = (columns - 1) * spacingX
+  const height = (rows - 1) * spacingY
+
+  return {
+    left: dimensions.width / 2 - width / 2,
+    top: dimensions.height / 2 - height / 2,
+    spacingX,
+    spacingY,
+    radius: Math.max(6, Math.min(dotRadius(state.denominator * groupSize), spacingForRadius * 0.43)),
+  }
+}
+
+function wholeTarget(dot, groupSize) {
+  if (state.wholeLayout !== 'rectangle') {
+    return {
+      x: dimensions.width / 2,
+      y: dimensions.height / 2,
+    }
+  }
+
+  const metrics = rectangleMetrics(groupSize)
+  return {
+    x: metrics.left + dot.group * metrics.spacingX,
+    y: metrics.top + dot.groupIndex * metrics.spacingY,
+  }
+}
+
+function renderRadius(count, mode, groupSize) {
+  if (mode === 'whole' && state.wholeLayout === 'rectangle') {
+    return rectangleMetrics(groupSize).radius
+  }
+
+  return dotRadius(count)
 }
 
 function clearAnimationTimers() {
@@ -278,7 +328,7 @@ function render(mode = currentMode) {
   const { dots, groupSize, usableTotal, hasRemainder } = createDots()
   const centers = getLayoutCenters(state.denominator)
   const center = { x: dimensions.width / 2, y: dimensions.height / 2 }
-  const radius = dotRadius(dots.length)
+  const radius = renderRadius(dots.length, mode, groupSize)
   currentMode = mode
   if (mode === 'whole' || mode === 'grouped') {
     stableMode = mode
@@ -331,10 +381,10 @@ function render(mode = currentMode) {
   styleNodes(node, radius, mode, groupSize, usableTotal)
 
   simulation = d3.forceSimulation(dots)
-    .force('x', d3.forceX((d) => mode === 'whole' ? center.x : centers[d.group].x).strength(mode === 'whole' ? 0.17 : 0.19))
-    .force('y', d3.forceY((d) => mode === 'whole' ? center.y : centers[d.group].y).strength(mode === 'whole' ? 0.17 : 0.19))
-    .force('charge', d3.forceManyBody().strength(mode === 'whole' ? -7 : -9))
-    .force('collide', d3.forceCollide(radius + 0.8).iterations(3))
+    .force('x', d3.forceX((d) => mode === 'whole' ? wholeTarget(d, groupSize).x : centers[d.group].x).strength(mode === 'whole' && state.wholeLayout === 'rectangle' ? 0.46 : mode === 'whole' ? 0.17 : 0.19))
+    .force('y', d3.forceY((d) => mode === 'whole' ? wholeTarget(d, groupSize).y : centers[d.group].y).strength(mode === 'whole' && state.wholeLayout === 'rectangle' ? 0.46 : mode === 'whole' ? 0.17 : 0.19))
+    .force('charge', d3.forceManyBody().strength(mode === 'whole' && state.wholeLayout === 'rectangle' ? 0 : mode === 'whole' ? -7 : -9))
+    .force('collide', d3.forceCollide(radius + (mode === 'whole' && state.wholeLayout === 'rectangle' ? 0.2 : 0.8)).iterations(3))
     .alpha(0.95)
     .alphaDecay(0.033)
     .on('tick', () => {
@@ -378,6 +428,9 @@ highlightLargest.addEventListener('change', () => {
   render(currentMode)
 })
 showAnswer.addEventListener('change', () => {
+  render(currentMode)
+})
+rectangleLayout.addEventListener('change', () => {
   render(currentMode)
 })
 resizeObserver.observe(document.querySelector('.visual-stage'))
