@@ -123,16 +123,24 @@ const color = d3.scaleOrdinal()
   .domain(d3.range(12))
   .range(['#16697a', '#db7c26', '#4d7c0f', '#b42357', '#5b5bd6', '#a35d00', '#007f73', '#8a4fff', '#ca6702', '#3c6e71', '#9b2226', '#477998'])
 
-function clampNumber(value, min, max) {
+function clampNumber(value, min, max, fallback = min) {
   const parsed = Number.parseInt(value, 10)
-  if (Number.isNaN(parsed)) return min
+  if (Number.isNaN(parsed)) return fallback
   return Math.min(Math.max(parsed, min), max)
 }
 
-function readState() {
-  const denominator = clampNumber(inputs.denominator.value, 1, 12)
-  const total = clampNumber(inputs.total.value, 1, 240)
-  const numerator = clampNumber(inputs.numerator.value, 0, denominator)
+function syncInputs(activeInput = null) {
+  if (activeInput !== inputs.denominator) inputs.denominator.value = state.denominator
+  if (activeInput !== inputs.numerator) inputs.numerator.value = state.numerator
+  if (activeInput !== inputs.total) inputs.total.value = state.total
+  inputs.numerator.max = state.denominator
+  speedOutput.value = `${state.animationSpeed.toFixed(2)}x`
+}
+
+function readState({ commitInputs = true, activeInput = null } = {}) {
+  const denominator = clampNumber(inputs.denominator.value, 1, 12, state.denominator)
+  const total = clampNumber(inputs.total.value, 1, 240, state.total)
+  const numerator = clampNumber(inputs.numerator.value, 0, denominator, Math.min(state.numerator, denominator))
 
   state.denominator = denominator
   state.numerator = numerator
@@ -142,11 +150,11 @@ function readState() {
   state.colorWhole = colorWhole.checked
   state.animationSpeed = Number.parseFloat(animationSpeed.value)
 
-  inputs.denominator.value = denominator
-  inputs.numerator.max = denominator
-  inputs.numerator.value = numerator
-  inputs.total.value = total
-  speedOutput.value = `${state.animationSpeed.toFixed(2)}x`
+  if (commitInputs) {
+    syncInputs()
+  } else {
+    syncInputs(activeInput)
+  }
 }
 
 function scaledDuration(ms) {
@@ -215,11 +223,22 @@ function createDots() {
   return { dots, groupSize: wholeGroupSize, usableTotal, hasRemainder }
 }
 
-function dotRadius(count) {
-  if (count > 170) return 10
-  if (count > 110) return 12
-  if (count > 70) return 14
-  return 17
+function dotRadius(count, denominator, groupSize) {
+  let radius = 17
+  if (count > 170) radius = 10
+  else if (count > 110) radius = 12
+  else if (count > 70) radius = 14
+
+  if (denominator > 1 && groupSize > 1) {
+    const edgeReserve = 46
+    const centerRadius = Math.max(80, Math.min(dimensions.width, dimensions.height) * 0.43)
+    const availableChord = Math.max(46, 2 * centerRadius * Math.sin(Math.PI / denominator) - edgeReserve)
+    const clusterDiameterPerRadius = Math.sqrt(groupSize) * 4.15
+    const fittedRadius = availableChord / clusterDiameterPerRadius
+    radius = Math.min(radius, Math.max(6, fittedRadius))
+  }
+
+  return radius
 }
 
 function angleFromTop(angle) {
@@ -829,11 +848,11 @@ function animateCombine(node, radius, wholeTargets, center, groupSize, usableTot
   transitionNodePositions(node, wholeTargets, 0, SWARM_TIMING.move, center, motionPlan, 'combine')
 }
 
-function render(mode = currentMode) {
-  readState()
+function render(mode = currentMode, options = {}) {
+  readState(options)
   const { dots, groupSize, usableTotal, hasRemainder } = createDots()
   const center = { x: dimensions.width / 2, y: dimensions.height / 2 }
-  const radius = dotRadius(dots.length)
+  const radius = dotRadius(dots.length, state.denominator, groupSize)
   const centers = getLayoutCenters(state.denominator, groupSize, radius)
   const groupedTargets = getGroupedTargets(dots, centers, radius)
   const wholeTargets = getWholeTargets(dots, centers, radius, groupSize, groupedTargets)
@@ -962,9 +981,28 @@ const resizeObserver = new ResizeObserver(([entry]) => {
 
 form.addEventListener('input', () => {
   clearAnimationTimers()
-  readState()
+  readState({ commitInputs: false, activeInput: document.activeElement })
   updateDimensions()
-  render('grouped')
+  render('grouped', { commitInputs: false, activeInput: document.activeElement })
+})
+Object.values(inputs).forEach((input) => {
+  input.addEventListener('blur', () => {
+    readState()
+    updateDimensions()
+    render('grouped')
+  })
+
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      input.blur()
+    }
+
+    if (event.key === 'Escape') {
+      syncInputs()
+      input.blur()
+    }
+  })
 })
 splitButton.addEventListener('click', toggleSplit)
 highlightLargest.addEventListener('change', () => {
