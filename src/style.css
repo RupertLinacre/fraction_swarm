@@ -38,12 +38,12 @@ input {
   grid-template-rows: auto 1fr;
 }
 
-.control-band {
+.question-band {
   display: grid;
-  grid-template-columns: auto minmax(230px, auto) minmax(360px, 1fr);
-  gap: 8px 16px;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 22px;
   align-items: center;
-  padding: 8px clamp(14px, 2vw, 28px);
+  padding: 10px clamp(16px, 2.2vw, 30px);
   background: var(--panel);
   border-bottom: 1px solid var(--line);
   box-shadow: 0 5px 26px rgba(15, 23, 42, 0.05);
@@ -58,23 +58,39 @@ input {
 h1 {
   margin: 0;
   color: #0f766e;
-  font-size: 0.98rem;
+  font-size: 1rem;
   font-weight: 850;
   line-height: 1;
   letter-spacing: 0;
   white-space: nowrap;
 }
 
+.workspace {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 286px);
+}
+
+.control-panel {
+  display: grid;
+  align-content: start;
+  gap: 20px;
+  padding: 18px 18px 22px;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  box-shadow: -8px 0 26px rgba(15, 23, 42, 0.04);
+}
+
 .fraction-form {
   display: grid;
-  grid-template-columns: minmax(124px, 146px) auto minmax(130px, 154px);
-  align-items: center;
-  gap: 7px;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: 11px;
 }
 
 .stacked-fraction {
   display: grid;
-  gap: 5px;
+  gap: 6px;
 }
 
 .fraction-bar {
@@ -86,9 +102,9 @@ h1 {
 
 .number-field {
   display: grid;
-  grid-template-columns: auto minmax(48px, 1fr);
-  align-items: center;
-  gap: 6px;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: 4px;
 }
 
 .number-field span {
@@ -96,13 +112,13 @@ h1 {
   font-size: 0.62rem;
   font-weight: 750;
   line-height: 1;
-  text-align: right;
+  text-align: left;
   white-space: nowrap;
 }
 
 .number-field input {
   width: 100%;
-  height: 30px;
+  height: 34px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--field);
@@ -121,51 +137,72 @@ h1 {
 }
 
 .of-word {
-  height: 100%;
-  display: grid;
-  place-items: center;
+  display: block;
+  justify-self: start;
   color: #334155;
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   font-weight: 850;
 }
 
 .of-word {
-  padding: 0 4px;
+  padding: 0;
 }
 
 .summary-strip {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
-  gap: 6px 10px;
-  min-height: 32px;
+  justify-content: center;
+  gap: 8px 14px;
+  min-height: 50px;
   color: var(--muted);
 }
 
 .math-question {
-  min-height: 32px;
+  width: clamp(220px, 25vw, 360px);
+  min-height: 44px;
   display: grid;
   place-items: center;
   padding: 4px 2px;
   color: var(--ink);
-  font-size: 0.98rem;
+  font-size: 1.16rem;
 }
 
 .math-question .katex {
-  font-size: 1.1em;
+  font-size: 1.3em;
 }
 
 .answer-result {
+  min-width: 98px;
   color: var(--ink);
-  font-size: 1.05rem;
+  font-size: 1.1rem;
+  white-space: nowrap;
 }
 
 .answer-result[hidden] {
   display: none;
 }
 
+.group-detail {
+  min-width: 210px;
+  font-size: 0.92rem;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.summary-value.is-empty,
+.legend-count.is-empty {
+  visibility: hidden;
+}
+
+.control-stack {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+}
+
 .split-button {
+  width: 100%;
   min-height: 32px;
   border: 1px solid #0f766e;
   border-radius: 8px;
@@ -201,6 +238,7 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  width: 100%;
   min-height: 32px;
   color: #334155;
   font-size: 0.82rem;
@@ -251,9 +289,10 @@ h1 {
 
 .speed-control {
   display: inline-grid;
-  grid-template-columns: auto minmax(88px, 118px) 42px;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 6px;
+  gap: 7px 8px;
+  width: 100%;
   min-height: 32px;
   color: #334155;
   font-size: 0.82rem;
@@ -261,6 +300,7 @@ h1 {
 }
 
 .speed-control input {
+  grid-column: 1 / -1;
   width: 100%;
   accent-color: #0f766e;
 }
@@ -378,25 +418,133 @@ h1 {
 }
 
 @media (max-width: 900px) {
-  .control-band {
-    grid-template-columns: 1fr auto;
+  .question-band {
+    grid-template-columns: 1fr;
     align-items: center;
+    gap: 4px;
   }
 
   .summary-strip {
-    grid-column: 1 / -1;
     justify-content: flex-start;
   }
 
+  .math-question {
+    width: 210px;
+    place-items: center start;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .control-panel {
+    order: -1;
+    display: grid;
+    grid-template-columns: minmax(260px, auto) minmax(320px, 1fr);
+    gap: 12px 18px;
+    align-items: center;
+    padding: 10px clamp(14px, 2vw, 28px);
+    border-left: 0;
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 5px 26px rgba(15, 23, 42, 0.04);
+  }
+
   .fraction-form {
+    grid-template-columns: minmax(124px, 146px) auto minmax(130px, 154px);
+    align-items: center;
     justify-content: start;
+    gap: 7px;
+  }
+
+  .number-field {
+    grid-template-columns: auto minmax(48px, 1fr);
+    align-items: center;
+    gap: 6px;
+  }
+
+  .number-field span {
+    text-align: right;
+  }
+
+  .number-field input {
+    height: 30px;
+  }
+
+  .of-word {
+    height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 0 4px;
+    font-size: 1.1rem;
+  }
+
+  .control-stack {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px 10px;
+  }
+
+  .split-button {
+    width: auto;
+  }
+
+  .highlight-toggle {
+    width: auto;
+  }
+
+  .speed-control {
+    width: auto;
+    grid-template-columns: auto minmax(88px, 118px) 42px;
+    gap: 6px;
+  }
+
+  .speed-control input {
+    grid-column: auto;
   }
 }
 
 @media (max-width: 620px) {
-  .control-band {
+  .question-band {
     grid-template-columns: 1fr;
     padding: 14px 16px;
+  }
+
+  .summary-strip {
+    display: grid;
+    grid-template-columns: auto minmax(96px, 1fr);
+    gap: 4px 12px;
+    align-items: center;
+    min-height: 80px;
+  }
+
+  .math-question {
+    width: auto;
+    min-width: 90px;
+    min-height: 34px;
+    font-size: 1rem;
+  }
+
+  .math-question .katex {
+    font-size: 1.18em;
+  }
+
+  .answer-result {
+    min-width: 96px;
+    font-size: 1rem;
+  }
+
+  .group-detail {
+    grid-column: 1 / -1;
+    min-width: 0;
+    min-height: 20px;
+    font-size: 0.84rem;
+  }
+
+  .control-panel {
+    grid-template-columns: 1fr;
+    padding: 12px 16px;
   }
 
   .fraction-form {
